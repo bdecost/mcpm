@@ -4,10 +4,11 @@ import numpy as np
 import h5py
 
 dist = 9
+GRAIN_ID_PATH = 'DataContainers/SyntheticVolume/CellData/FeatureIds'
 
 def load_dream3d(path):
   f = h5py.File(path)
-  grain_ids = np.array(f['DataContainers/SyntheticVolume/CellData/FeatureIds'])
+  grain_ids = np.array(f[GRAIN_ID_PATH])
   f.close()
   return grain_ids.reshape((grain_ids.shape[0], grain_ids.shape[1]))
 
@@ -15,12 +16,12 @@ def load_dream3d(path):
 def dump_dream3d(sites, time):
   path = 'dump{0:06d}.dream3d'.format(time)
   f = h5py.File(path)
-  f['DataContainers/SyntheticVolume/CellData/FeatureIds'] = sites
+  f[GRAIN_ID_PATH] = sites
   f.close()
   return
 
 
-def weight_mask(dist, sigma_squared=1, a=None, cutoff=0.01):
+def gaussian_mask(dist, sigma_squared=1, a=None, cutoff=0.01):
   if a is None:
     a = 1/(np.sqrt(2*sigma_squared*np.pi))
   pos = np.arange(-dist, dist+1)
@@ -31,7 +32,7 @@ def weight_mask(dist, sigma_squared=1, a=None, cutoff=0.01):
   return weights.flatten()
 
 
-def uniform_weight_mask(dist, sigma_squared=1, a=None):
+def uniform_mask(dist, sigma_squared=1, a=None):
   return np.ones((2*dist+1, 2*dist+1)).flatten()
 
 
@@ -51,7 +52,7 @@ def neighbor_list(sites, dist=1):
   num_neighs = check_neighs.size
   neighbors = np.zeros((sites.size, num_neighs),dtype=int)
   for site in np.arange(sites.size):
-     neighbors[site] = site_neighbors(site, dims=sites.shape, dist=dist)
+    neighbors[site] = site_neighbors(site, dims=sites.shape, dist=dist)
 
   return neighbors
 
@@ -68,27 +69,26 @@ def site_energy(site, kT, sites, weights):
 def energy_map(sites, kT, weights):
   energy = np.zeros_like(sites)
   e = energy.ravel()
-  for site_id,s in np.ndenumerate(sites.ravel()):
+  for site_id in np.ndindex(sites.ravel()):
     e[site_id] = site_energy(site_id, kT, sites, weights)
   return energy
 
 
 def site_propensity(site, neighbors, nearest, kT, sites, weights):
-  s = sites.ravel()
-  current_state = s[site]
-  states = np.unique(s[nearest[site]])
+  current_state = sites[site]
+  states = np.unique(sites[nearest[site]])
   states = states[states != current_state]
   if states.size == 0:
     return 0
   neighs = neighbors[site]
 
-  delta = s[neighs] != current_state
+  delta = sites[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 
   prob = 0
   for proposed_state in states:
-    s[site] = proposed_state
-    delta = s[neighs] != proposed_state
+    sites[site] = proposed_state
+    delta = sites[neighs] != proposed_state
     proposed_energy = np.sum(np.multiply(delta, weights))
     energy_change = proposed_energy - current_energy
   
@@ -97,26 +97,25 @@ def site_propensity(site, neighbors, nearest, kT, sites, weights):
     elif kT > 0.0:
       prob += np.exp(-energy_change/kT)
 
-  s[site] = current_state
+  sites[site] = current_state
   return prob
 
 
 def kmc_event(site, neighbors, nearest, kT, weights, sites, propensity):
-  s = sites.ravel()
-  threshold = np.random.uniform() * propensity.ravel()[site]
-  current_state = s[site]
+  threshold = np.random.uniform() * propensity[site]
+  current_state = sites[site]
 
-  states = np.unique(s[nearest[site]])
+  states = np.unique(sites[nearest[site]])
   states = states[states != current_state]
 
   neighs = neighbors[site]
-  delta = s[neighs] != current_state
+  delta = sites[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 
   prob = 0
   for proposed_state in states:
-    s[site] = proposed_state
-    delta = s[neighs] != proposed_state
+    sites[site] = proposed_state
+    delta = sites[neighs] != proposed_state
     proposed_energy = np.sum(np.multiply(delta, weights))
     energy_change = proposed_energy - current_energy
   
@@ -129,8 +128,8 @@ def kmc_event(site, neighbors, nearest, kT, weights, sites, propensity):
 
   neighs = neighs[np.nonzero(weights)]
   for neigh in np.nditer(neighs):
-    propensity.ravel()[neigh] = site_propensity(neigh, neighbors, nearest,
-                                                kT, sites, weights)
+    propensity[neigh] = site_propensity(neigh, neighbors, nearest,
+                                        kT, sites, weights)
   return
 
 
@@ -160,7 +159,7 @@ def kmc_all_propensity(sites, neighbors, nearest, kT, weights):
   print('initializing kmc propensity')
   propensity = np.zeros(sites.shape, dtype=float)
   for site,__ in np.ndenumerate(sites.ravel()):
-    propensity.ravel()[site] = site_propensity(site, neighbors, nearest, kT, sites, weights)
+    propensity[site] = site_propensity(site, neighbors, nearest, kT, sites, weights)
   return propensity
 
 
@@ -169,14 +168,15 @@ def iterate_kmc(sites, kT, weights, length):
   dump_frequency = 1
   neighbors = neighbor_list(sites, dist=dist)
   nearest = neighbor_list(sites, dist=1)
-  propensity = kmc_all_propensity(sites, neighbors, nearest, kT, weights)
+  propensity = kmc_all_propensity(sites.ravel(),
+                                  neighbors, nearest, kT, weights)
   while time < length:
     inner_time = 0
     print('time: {}'.format(time))
     dump_dream3d(sites, int(time))
     while inner_time < dump_frequency:
       site, time_step = kmc_select(propensity)
-      kmc_event(site, neighbors, nearest, kT, weights, sites, propensity)
+      kmc_event(site, neighbors, nearest, kT, weights, sites.ravel(), propensity)
       inner_time += time_step
     time += inner_time
   dump_dream3d(sites, int(time))
@@ -244,9 +244,9 @@ if __name__ == '__main__':
   input_path = 'input.dream3d'
   sites = load_dream3d(input_path)
   kT = 10**-2
-  weights = weight_mask(dist,
-                        sigma_squared=np.square(3),
-                        a=1)
+  weights = gaussian_mask(dist,
+                          sigma_squared=np.square(3),
+                          a=1)
   length = 10
   # iterate_rejection(sites, kT, weights, length)
   iterate_kmc(sites, kT, weights, length)
