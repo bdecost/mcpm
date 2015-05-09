@@ -35,51 +35,48 @@ def uniform_weight_mask(dist, sigma_squared=1, a=None):
   return np.ones((2*dist+1, 2*dist+1))
 
 
-def site_neighbors(idx, idy, dims=None, dist=1):
+def site_neighbors(site, dims=None, dist=1):
+  idx, idy = np.unravel_index(site, dims=dims)
   x_range = np.arange(idx - dist, idx + dist + 1)
   y_range = np.arange(idy - dist, idy + dist + 1)
   neigh_idx, neigh_idy = np.meshgrid(x_range, y_range)
-  neighs = np.ravel_multi_index((neigh_idx, neigh_idy), dims=dims, mode='wrap')
-  return np.unravel_index(neighs, dims=dims)
+  return np.ravel_multi_index((neigh_idx, neigh_idy), dims=dims, mode='wrap')
 
 
-def site_energy(idx, idy, kT, sites, weights):
-  current_state = sites[idx, idy]
-  neighs = site_neighbors(idx, idy,
-                          dims=sites.shape,
-                          dist=dist)
-  delta = sites[neighs] != current_state
+def site_energy(site, kT, sites, weights):
+  s = sites.ravel()
+  current_state = s[site]
+  neighs = site_neighbors(site, dims=sites.shape, dist=dist)
+  delta = s[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
   return current_energy
 
 
 def energy_map(sites, kT, weights):
-  e = np.zeros_like(sites)
-  for site_id,s in np.ndenumerate(sites):
-    e[site_id] = site_energy(site_id[0], site_id[1], kT, sites, weights)
-  return e
+  energy = np.zeros_like(sites)
+  e = energy.ravel()
+  for site_id,s in np.ndenumerate(sites.ravel()):
+    e[site_id] = site_energy(site_id, kT, sites, weights)
+  return energy
 
 
-def site_propensity(idx, idy, kT, sites, weights):
-  current_state = sites[idx, idy]
-  nearest = site_neighbors(idx, idy,
-                           dims=sites.shape,
-                           dist=1)
-  states = np.unique(sites[nearest])
+def site_propensity(site, kT, sites, weights):
+  s = sites.ravel()
+  current_state = s[site]
+  nearest = site_neighbors(site, dims=sites.shape, dist=1)
+  states = np.unique(s[nearest])
   states = states[states != current_state]
   if states.size == 0:
     return 0
-  neighs = site_neighbors(idx, idy,
-                          dims=sites.shape,
-                          dist=dist)
+  neighs = site_neighbors(site, dims=sites.shape, dist=dist)
 
-  delta = sites[neighs] != current_state
+  delta = s[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 
   prob = 0
   for proposed_state in states:
-    sites[idx, idy] = proposed_state
-    delta = sites[neighs] != proposed_state
+    s[site] = proposed_state
+    delta = s[neighs] != proposed_state
     proposed_energy = np.sum(np.multiply(delta, weights))
     energy_change = proposed_energy - current_energy
   
@@ -88,31 +85,27 @@ def site_propensity(idx, idy, kT, sites, weights):
     elif kT > 0.0:
       prob += np.exp(-energy_change/kT)
 
-  sites[idx, idy] = current_state
+  s[site] = current_state
   return prob
 
 
 def kmc_event(site, kT, weights, sites, propensity):
-  idx, idy = np.unravel_index(site, dims=sites.shape)
-  threshold = np.random.uniform() * propensity[idx,idy]
-  current_state = sites[idx, idy]
-  nearest = site_neighbors(idx, idy,
-                           dims=sites.shape,
-                           dist=1)
-  states = np.unique(sites[nearest])
+  s = sites.ravel()
+  threshold = np.random.uniform() * propensity.ravel()[site]
+  current_state = s[site]
+  nearest = site_neighbors(site, dims=sites.shape, dist=1)
+  states = np.unique(s[nearest])
   states = states[states != current_state]
 
-  neighs = site_neighbors(idx, idy,
-                          dims=sites.shape,
-                          dist=dist)
+  neighs = site_neighbors(site, dims=sites.shape, dist=dist)
 
-  delta = sites[neighs] != current_state
+  delta = s[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 
   prob = 0
   for proposed_state in states:
-    sites[idx, idy] = proposed_state
-    delta = sites[neighs] != proposed_state
+    s[site] = proposed_state
+    delta = s[neighs] != proposed_state
     proposed_energy = np.sum(np.multiply(delta, weights))
     energy_change = proposed_energy - current_energy
   
@@ -122,11 +115,10 @@ def kmc_event(site, kT, weights, sites, propensity):
       prob += np.exp(-energy_change/kT)
     if prob >= threshold:
       break
-  neighs_x, neighs_y = np.array(neighs[0]), np.array(neighs[1])
-  mask = np.nonzero(weights)
-  neighs_x, neighs_y = neighs_x[mask], neighs_y[mask]
-  for nx, ny in np.nditer([neighs_x, neighs_y]):
-    propensity[nx,ny] = site_propensity(nx, ny, kT, sites, weights)
+
+  neighs = neighs[np.nonzero(weights)]
+  for neigh in np.nditer(neighs):
+    propensity.ravel()[neigh] = site_propensity(neigh, kT, sites, weights)
     
   return
 
@@ -156,15 +148,14 @@ def kmc_select_sort(propensity):
 def kmc_init(sites, kT, weights):
   print('initializing kmc data structures')
   propensity = np.zeros(sites.shape, dtype=float)
-  for site,__ in np.ndenumerate(sites):
-    idx, idy = site[0], site[1]
-    propensity[site] = site_propensity(idx, idy, kT, sites, weights)
+  for site,__ in np.ndenumerate(sites.ravel()):
+    propensity.ravel()[site] = site_propensity(site, kT, sites, weights)
   return propensity
 
 
 def iterate_kmc(sites, kT, weights, length):
   time = 0
-  dump_frequency = 10
+  dump_frequency = 1
   propensity = kmc_init(sites, kT, weights)
   while time < length:
     inner_time = 0
@@ -179,28 +170,25 @@ def iterate_kmc(sites, kT, weights, length):
   return time
 
 
-def rejection_event(idx, idy, kT, sites, weights):
-  current_state = sites[idx, idy]
-  nearest = site_neighbors(idx, idy,
-                           dims=sites.shape,
-                           dist=1)
-  states = np.unique(sites[nearest])
+def rejection_event(site, kT, sites, weights):
+  s = sites.ravel()
+  current_state = s[site]
+  nearest = site_neighbors(site, dims=sites.shape, dist=1)
+  states = np.unique(s[nearest])
   states = states[states != current_state]
   if states.size == 0:
     return current_state
 
-  neighs = site_neighbors(idx, idy,
-                          dims=sites.shape,
-                          dist=dist)
-  delta = sites[neighs] != current_state
+  neighs = site_neighbors(site, dims=sites.shape, dist=dist)
+  delta = s[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 
   proposed_state = np.random.choice(states)
-  sites[idx, idy] = proposed_state
+  s[site] = proposed_state
 
-  delta = sites[neighs] != proposed_state
+  delta = s[neighs] != proposed_state
   proposed_energy = np.sum(np.multiply(delta, weights))
-  sites[idx, idy] = current_state
+  s[site] = current_state
   energy_change = proposed_energy - current_energy
   
   if energy_change > 0:
@@ -214,12 +202,12 @@ def rejection_event(idx, idy, kT, sites, weights):
 
 def rejection_timestep(sites, kT, weights):
   rejects = 0
+  s = sites.ravel()
   for i in range(sites.size):
-    idx = np.random.randint(sites.shape[0])
-    idy = np.random.randint(sites.shape[1])
-    current = sites[idx, idy]
-    sites[idx, idy] = rejection_event(idx, idy, kT, sites, weights)
-    rejects += (current == sites[idx, idy])
+    site = np.random.randint(sites.size)
+    current = s[site]
+    s[site] = rejection_event(site, kT, sites, weights)
+    rejects += (current == s[site])
   return rejects
 
 
@@ -246,6 +234,6 @@ if __name__ == '__main__':
   weights = weight_mask(dist,
                         sigma_squared=np.square(3),
                         a=1)
-  length = 2000
+  length = 10
   # iterate_rejection(sites, kT, weights, length)
   iterate_kmc(sites, kT, weights, length)
