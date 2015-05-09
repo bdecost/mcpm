@@ -123,7 +123,7 @@ def kmc_event(site, kT, weights, sites, propensity):
   return
 
 
-def kmc_select(propensity):
+def kmc_select_iter(propensity):
   total_propensity = np.sum(propensity)
   index = np.argsort(propensity, axis=None)
   target = total_propensity * np.random.uniform()
@@ -137,7 +137,7 @@ def kmc_select(propensity):
   return site, time_step
 
 
-def kmc_select_sort(propensity):
+def kmc_select(propensity):
   cumprop= np.cumsum(propensity)
   target = cumprop[-1] * np.random.uniform()
   site = np.searchsorted(cumprop, target)
@@ -162,7 +162,7 @@ def iterate_kmc(sites, kT, weights, length):
     print('time: {}'.format(time))
     dump_dream3d(sites, int(time))
     while inner_time < dump_frequency:
-      site, time_step = kmc_select_sort(propensity)
+      site, time_step = kmc_select(propensity)
       kmc_event(site, kT, weights, sites, propensity)
       inner_time += time_step
     time += inner_time
