@@ -28,11 +28,11 @@ def weight_mask(dist, sigma_squared=1, a=None, cutoff=0.01):
   square_dist = dist_x**2 + dist_y**2
   weights = a * np.exp(-0.5 * square_dist / sigma_squared)
   weights[weights < cutoff] = 0
-  return weights
+  return weights.flatten()
 
 
 def uniform_weight_mask(dist, sigma_squared=1, a=None):
-  return np.ones((2*dist+1, 2*dist+1))
+  return np.ones((2*dist+1, 2*dist+1)).flatten()
 
 
 def site_neighbors(site, dims=None, dist=1):
@@ -40,7 +40,20 @@ def site_neighbors(site, dims=None, dist=1):
   x_range = np.arange(idx - dist, idx + dist + 1)
   y_range = np.arange(idy - dist, idy + dist + 1)
   neigh_idx, neigh_idy = np.meshgrid(x_range, y_range)
-  return np.ravel_multi_index((neigh_idx, neigh_idy), dims=dims, mode='wrap')
+  neighs =  np.ravel_multi_index((neigh_idx, neigh_idy),
+                                 dims=dims, mode='wrap')
+  return neighs.flatten()
+
+
+def neighbor_list(sites, dist=1):
+  print('building neighbor list')
+  check_neighs = site_neighbors(0, dims=sites.shape, dist=dist)
+  num_neighs = check_neighs.size
+  neighbors = np.zeros((sites.size, num_neighs),dtype=int)
+  for site in np.arange(sites.size):
+     neighbors[site] = site_neighbors(site, dims=sites.shape, dist=dist)
+
+  return neighbors
 
 
 def site_energy(site, kT, sites, weights):
@@ -60,15 +73,14 @@ def energy_map(sites, kT, weights):
   return energy
 
 
-def site_propensity(site, kT, sites, weights):
+def site_propensity(site, neighbors, nearest, kT, sites, weights):
   s = sites.ravel()
   current_state = s[site]
-  nearest = site_neighbors(site, dims=sites.shape, dist=1)
-  states = np.unique(s[nearest])
+  states = np.unique(s[nearest[site]])
   states = states[states != current_state]
   if states.size == 0:
     return 0
-  neighs = site_neighbors(site, dims=sites.shape, dist=dist)
+  neighs = neighbors[site]
 
   delta = s[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
@@ -89,16 +101,15 @@ def site_propensity(site, kT, sites, weights):
   return prob
 
 
-def kmc_event(site, kT, weights, sites, propensity):
+def kmc_event(site, neighbors, nearest, kT, weights, sites, propensity):
   s = sites.ravel()
   threshold = np.random.uniform() * propensity.ravel()[site]
   current_state = s[site]
-  nearest = site_neighbors(site, dims=sites.shape, dist=1)
-  states = np.unique(s[nearest])
+
+  states = np.unique(s[nearest[site]])
   states = states[states != current_state]
 
-  neighs = site_neighbors(site, dims=sites.shape, dist=dist)
-
+  neighs = neighbors[site]
   delta = s[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 
@@ -118,8 +129,8 @@ def kmc_event(site, kT, weights, sites, propensity):
 
   neighs = neighs[np.nonzero(weights)]
   for neigh in np.nditer(neighs):
-    propensity.ravel()[neigh] = site_propensity(neigh, kT, sites, weights)
-    
+    propensity.ravel()[neigh] = site_propensity(neigh, neighbors, nearest,
+                                                kT, sites, weights)
   return
 
 
@@ -145,25 +156,27 @@ def kmc_select(propensity):
   return site, time_step  
 
 
-def kmc_init(sites, kT, weights):
-  print('initializing kmc data structures')
+def kmc_all_propensity(sites, neighbors, nearest, kT, weights):
+  print('initializing kmc propensity')
   propensity = np.zeros(sites.shape, dtype=float)
   for site,__ in np.ndenumerate(sites.ravel()):
-    propensity.ravel()[site] = site_propensity(site, kT, sites, weights)
+    propensity.ravel()[site] = site_propensity(site, neighbors, nearest, kT, sites, weights)
   return propensity
 
 
 def iterate_kmc(sites, kT, weights, length):
   time = 0
   dump_frequency = 1
-  propensity = kmc_init(sites, kT, weights)
+  neighbors = neighbor_list(sites, dist=dist)
+  nearest = neighbor_list(sites, dist=1)
+  propensity = kmc_all_propensity(sites, neighbors, nearest, kT, weights)
   while time < length:
     inner_time = 0
     print('time: {}'.format(time))
     dump_dream3d(sites, int(time))
     while inner_time < dump_frequency:
       site, time_step = kmc_select(propensity)
-      kmc_event(site, kT, weights, sites, propensity)
+      kmc_event(site, neighbors, nearest, kT, weights, sites, propensity)
       inner_time += time_step
     time += inner_time
   dump_dream3d(sites, int(time))
