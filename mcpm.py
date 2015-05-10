@@ -36,6 +36,14 @@ def gaussian_mask(dist, sigma_squared=1, a=None, cutoff=0.01):
 def uniform_mask(dist, sigma_squared=1, a=None):
   return np.ones((2*dist+1, 2*dist+1)).flatten()
 
+def nearest_neighbor_mask(dist):
+  pos = np.arange(-dist, dist+1)
+  dist_x, dist_y = np.meshgrid(pos, pos)
+  square_dist = dist_x**2 + dist_y**2
+  nearest = np.zeros_like(square_dist)
+  nearest[square_dist <=2] = 1
+  return nearest.flatten()
+
 
 def site_neighbors(site, dims=None, dist=1):
   idx, idy = np.unravel_index(site, dims=dims)
@@ -77,13 +85,13 @@ def energy_map(sites, kT, weights):
 
 def site_propensity(site, neighbors, nearest, kT, sites, weights):
   current_state = sites[site]
-  nearest_sites = nearest[site]
+  neighs = neighbors[site]
+  nearest_sites = neighs[nearest]
   nearest_states = sites[nearest_sites]
   states = pd.unique(nearest_states) # pd.unique faster than np.unique
   states = states[states != current_state]
   if states.size == 0:
     return 0
-  neighs = neighbors[site]
 
   delta = sites[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
@@ -107,11 +115,11 @@ def site_propensity(site, neighbors, nearest, kT, sites, weights):
 def kmc_event(site, neighbors, nearest, kT, weights, sites, propensity):
   threshold = np.random.uniform() * propensity[site]
   current_state = sites[site]
-
-  states = pd.unique(sites[nearest[site]]) # pd.unique faster than np.unique
+  neighs = neighbors[site]
+  nearest_sites = neighs[nearest]
+  states = pd.unique(sites[nearest_sites]) # pd.unique faster than np.unique
   states = states[states != current_state]
 
-  neighs = neighbors[site]
   delta = sites[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 
@@ -170,7 +178,7 @@ def iterate_kmc(sites, kT, weights, length):
   time = 0
   dump_frequency = 1
   neighbors = neighbor_list(sites, dist=dist)
-  nearest = neighbor_list(sites, dist=1)
+  nearest = nearest_neighbor_mask(dist)
   propensity = kmc_all_propensity(sites.ravel(),
                                   neighbors, nearest, kT, weights)
   while time < length:
