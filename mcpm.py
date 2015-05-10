@@ -2,6 +2,7 @@
 
 import numpy as np
 import h5py
+import pandas as pd
 
 dist = 9
 GRAIN_ID_PATH = 'DataContainers/SyntheticVolume/CellData/FeatureIds'
@@ -76,7 +77,9 @@ def energy_map(sites, kT, weights):
 
 def site_propensity(site, neighbors, nearest, kT, sites, weights):
   current_state = sites[site]
-  states = np.unique(sites[nearest[site]])
+  nearest_sites = nearest[site]
+  nearest_states = sites[nearest_sites]
+  states = pd.unique(nearest_states) # pd.unique faster than np.unique
   states = states[states != current_state]
   if states.size == 0:
     return 0
@@ -105,7 +108,7 @@ def kmc_event(site, neighbors, nearest, kT, weights, sites, propensity):
   threshold = np.random.uniform() * propensity[site]
   current_state = sites[site]
 
-  states = np.unique(sites[nearest[site]])
+  states = pd.unique(sites[nearest[site]]) # pd.unique faster than np.unique
   states = states[states != current_state]
 
   neighs = neighbors[site]
