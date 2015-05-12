@@ -40,8 +40,8 @@ def nearest_neighbor_mask(dist):
   pos = np.arange(-dist, dist+1)
   dist_x, dist_y = np.meshgrid(pos, pos)
   square_dist = dist_x**2 + dist_y**2
-  nearest = np.zeros_like(square_dist)
-  nearest[square_dist <=2] = 1
+  nearest = np.zeros_like(square_dist, dtype=bool)
+  nearest[square_dist <= 2] = 1
   return nearest.flatten()
 
 
@@ -115,7 +115,7 @@ def site_propensity(site, neighbors, nearest, kT, sites, weights):
 def kmc_event(site, neighbors, nearest, kT, weights, sites, propensity):
   threshold = np.random.uniform() * propensity[site]
   current_state = sites[site]
-  neighs = neighbors[site]
+  neighs = neighbors[site] # indices into sites
   nearest_sites = neighs[nearest]
   states = pd.unique(sites[nearest_sites]) # pd.unique faster than np.unique
   states = states[states != current_state]
@@ -176,7 +176,7 @@ def kmc_all_propensity(sites, neighbors, nearest, kT, weights):
 
 def iterate_kmc(sites, kT, weights, length):
   time = 0
-  dump_frequency = 1
+  dump_frequency = 20
   neighbors = neighbor_list(sites, dist=dist)
   nearest = nearest_neighbor_mask(dist)
   propensity = kmc_all_propensity(sites.ravel(),
@@ -258,6 +258,6 @@ if __name__ == '__main__':
   weights = gaussian_mask(dist,
                           sigma_squared=np.square(3),
                           a=1)
-  length = 10
+  length = 200
   # iterate_rejection(sites, kT, weights, length)
   iterate_kmc(sites, kT, weights, length)
