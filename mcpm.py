@@ -3,15 +3,16 @@
 import numpy as np
 import h5py
 import pandas as pd
+import argparse
 
-dist = 9
 GRAIN_ID_PATH = 'DataContainers/SyntheticVolume/CellData/FeatureIds'
 
 def load_dream3d(path):
   f = h5py.File(path)
   grain_ids = np.array(f[GRAIN_ID_PATH])
   f.close()
-  return grain_ids.reshape((grain_ids.shape[0], grain_ids.shape[1]))
+  shape = tuple([s for s in grain_ids.shape if s > 1])
+  return grain_ids.reshape(shape)
 
 
 def dump_dream3d(sites, time):
@@ -22,36 +23,38 @@ def dump_dream3d(sites, time):
   return
 
 
-def gaussian_mask(dist, sigma_squared=1, a=None, cutoff=0.01):
+def gaussian_mask(sites, dist, sigma_squared=1, a=None, cutoff=0.01):
   if a is None:
     a = 1/(np.sqrt(2*sigma_squared*np.pi))
-  pos = np.arange(-dist, dist+1)
-  dist_x, dist_y = np.meshgrid(pos, pos)
-  square_dist = dist_x**2 + dist_y**2
+  id_range = np.arange(-dist,dist+1)
+  dist = np.meshgrid( *[id_range for d in range(sites.ndim)] )
+  square_dist = np.sum(np.square(list(dist)), axis=0)
   weights = a * np.exp(-0.5 * square_dist / sigma_squared)
   weights[weights < cutoff] = 0
   return weights.flatten()
 
 
-def uniform_mask(dist, sigma_squared=1, a=None):
-  return np.ones((2*dist+1, 2*dist+1)).flatten()
-
-def nearest_neighbor_mask(dist):
-  pos = np.arange(-dist, dist+1)
-  dist_x, dist_y = np.meshgrid(pos, pos)
-  square_dist = dist_x**2 + dist_y**2
+def uniform_mask(sites, dist=1):
+  dims = tuple([2*dist+1 for __ in range(sites.ndim)])
+  return np.ones(dims).flatten()
+    
+def nearest_neighbor_mask(dist, ndim):
+  id_range = np.arange(-dist,dist+1)
+  dist = np.meshgrid( *[id_range for d in range(ndim)] )
+  square_dist = np.sum(np.square(list(dist)), axis=0)
   nearest = np.zeros_like(square_dist, dtype=bool)
   nearest[square_dist <= 2] = 1
   return nearest.flatten()
 
 
 def site_neighbors(site, dims=None, dist=1):
-  idx, idy = np.unravel_index(site, dims=dims)
-  x_range = np.arange(idx - dist, idx + dist + 1)
-  y_range = np.arange(idy - dist, idy + dist + 1)
-  neigh_idx, neigh_idy = np.meshgrid(x_range, y_range)
-  neighs =  np.ravel_multi_index((neigh_idx, neigh_idy),
-                                 dims=dims, mode='wrap')
+  # square/cubic pixel neighborhood of 'radius' dist
+  # for 2 and 3 dimensional periodic images
+  index = np.unravel_index(site, dims=dims)
+  id_range = [np.arange(idx-dist, idx+dist+1)
+              for idx in index]
+  neigh_ids = np.meshgrid(*id_range)
+  neighs =  np.ravel_multi_index(neigh_ids,dims=dims, mode='wrap')
   return neighs.flatten()
 
 
@@ -174,11 +177,15 @@ def kmc_all_propensity(sites, neighbors, nearest, kT, weights):
   return propensity
 
 
-def iterate_kmc(sites, kT, weights, length):
+def iterate_kmc(sites, weights, options):
+  dist = options.radius
+  kT = options.kT
+  length = options.length
+  dump_frequency = options.freq
+  
   time = 0
-  dump_frequency = 20
   neighbors = neighbor_list(sites, dist=dist)
-  nearest = nearest_neighbor_mask(dist)
+  nearest = nearest_neighbor_mask(dist,sites.ndim)
   propensity = kmc_all_propensity(sites.ravel(),
                                   neighbors, nearest, kT, weights)
   while time < length:
@@ -235,7 +242,7 @@ def rejection_timestep(sites, kT, weights):
   return rejects
 
 
-def iterate_rejection(sites, kT, weights, length):
+def iterate_rejection(sites, kT, weights, length, dist=1):
   dump_frequency = 10
   rejects = 0
   for time in np.arange(0, length+1, dump_frequency):
@@ -251,13 +258,47 @@ def iterate_rejection(sites, kT, weights, length):
 
 
 if __name__ == '__main__':
-  # input_path = 'test.dream3d'
-  input_path = 'input.dream3d'
-  sites = load_dream3d(input_path)
-  kT = 10**-2
-  weights = gaussian_mask(dist,
-                          sigma_squared=np.square(3),
-                          a=1)
-  length = 200
-  # iterate_rejection(sites, kT, weights, length)
-  iterate_kmc(sites, kT, weights, length)
+  parser = argparse.ArgumentParser(prog='mcpm',
+             description='''Kinetic Monte Carlo grain growth
+                       simulations in 2 and 3 dimensions.''')
+
+  parser.add_argument('--infile', nargs='?', default='input.dream3d',
+                      help='DREAM3D file containing initial structure')
+  parser.add_argument('--style', default='kmc',
+                      choices=['kmc', 'reject'],
+                      help='Monte Carlo style')
+  parser.add_argument('--nbrhd', nargs='?', default='gaussian',
+                      choices=['uniform', 'gaussian'],
+                      help='pixel neighborhood weighting')
+  parser.add_argument('--sigma', type=float, default=3,
+                      help='smoothing parameter for gaussian neighborhood')
+  parser.add_argument('--radius', type=int, default=9,
+                      help='pixel neighborhood radius')
+  parser.add_argument('--kT', type=float, default=.001,
+                      help='Monte Carlo temperature kT')
+  parser.add_argument('--length', type=float, default=100,
+                      help='Simulation length in MCS')
+  parser.add_argument('--cutoff', type=float, default=0.01,
+                      help='interaction weight cutoff value')
+  parser.add_argument('--norm', type=float, default=1,
+                      help='gaussian kernel normalization constant a')
+  parser.add_argument('--freq', type=float, default=10,
+                      help='timesteps between system snapshots')
+  parser.add_argument('--neighborlist', action='store_true',
+                      help='''Compute explicit neighbor lists.
+                              Problematic with large 3D systems.''')
+  
+  args = parser.parse_args()
+  sites = load_dream3d(args.infile)
+
+  if args.nbrhd == 'uniform':
+    weights = uniform_mask(sites, dist=1)
+  elif args.nbrhd == 'gaussian':
+    weights = gaussian_mask(sites, args.radius, a=args.norm,
+                sigma_squared=np.square(args.sigma))
+
+  if args.style == 'reject':
+    iterate_rejection(sites, args.kT, weights, args.length, dist=args.radius)
+  elif args.style == 'kmc':
+    iterate_kmc(sites, weights, args)
+    
