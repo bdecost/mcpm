@@ -4,6 +4,7 @@ import numpy as np
 import h5py
 
 GRAIN_ID_PATH = 'DataContainers/SyntheticVolume/CellData/FeatureIds'
+QUATERNION_PATH = 'DataContainers/SyntheticVolume/CellFeatureData/AvgQuats'
 
 def load_dream3d(path):
   f = h5py.File(path)
@@ -19,3 +20,9 @@ def dump_dream3d(sites, time):
   f[GRAIN_ID_PATH] = sites
   f.close()
   return
+
+def load_quaternions(path):
+  f = h5py.File(path)
+  quaternions = np.array(f[QUATERNION_PATH], dtype=np.float32)
+  f.close()
+  return quaternions

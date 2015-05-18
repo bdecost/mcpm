@@ -102,6 +102,7 @@ def all_propensity(sites, nearest, kT, weights):
 
 
 def iterate(sites, weights, options):
+
   global radius
   radius = options.radius
   global dims
