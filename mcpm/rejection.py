@@ -10,13 +10,13 @@ from . import spatial
 def site_event(site, kT, sites, weights):
   s = sites.ravel()
   current_state = s[site]
-  nearest = spatial.site_neighbors(site, dims=sites.shape, dist=1)
+  nearest = spatial.site_neighbors(site, dims=sites.shape, radius=1)
   states = np.unique(s[nearest])
   states = states[states != current_state]
   if states.size == 0:
     return current_state
 
-  neighs = site_neighbors(site, dims=sites.shape, dist=dist)
+  neighs = site_neighbors(site, dims=sites.shape, radius=radius)
   delta = s[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 
@@ -48,8 +48,12 @@ def timestep(sites, kT, weights):
   return rejects
 
 
-def iterate(sites, kT, weights, length, dist=1):
-  dump_frequency = 10
+def iterate(sites, weights, options):
+  radius = options.radius
+  kT = options.kT
+  length = options.length
+  dump_frequency = options.freq
+
   rejects = 0
   for time in np.arange(0, length+1, dump_frequency):
     print('time: {}'.format(time))

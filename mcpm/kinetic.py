@@ -99,14 +99,14 @@ def all_propensity(sites, neighbors, nearest, kT, weights):
 
 
 def iterate(sites, weights, options):
-  dist = options.radius
+  radius = options.radius
   kT = options.kT
   length = options.length
   dump_frequency = options.freq
 
   time = 0
-  neighbors = spatial.neighbor_list(sites, dist=dist)
-  nearest = spatial.nearest_neighbor_mask(dist,sites.ndim)
+  neighbors = spatial.neighbor_list(sites, radius=radius)
+  nearest = spatial.nearest_neighbor_mask(radius,sites.ndim)
   propensity = all_propensity(sites.ravel(),
                               neighbors, nearest, kT, weights)
   while time < length:

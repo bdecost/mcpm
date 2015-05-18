@@ -47,13 +47,13 @@ def main():
   sites = io.load_dream3d(args.infile)
 
   if args.nbrhd == 'uniform':
-    weights = uniform_mask(sites, dist=1)
+    weights = uniform_mask(sites, radius=1)
   elif args.nbrhd == 'gaussian':
     weights = gaussian_mask(sites, args.radius, a=args.norm,
                         sigma_squared=np.square(args.sigma))
 
   if args.style == 'reject':
-    rejection.iterate(sites, args.kT, weights, args.length, dist=args.radius)
+    rejection.iterate(sites, weights, args)
   elif args.style == 'kmc':
     kinetic.iterate(sites, weights, args)
     
