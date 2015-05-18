@@ -1,0 +1,14 @@
+*.pyc
+*.dream3d
+*.png
+*.gif
+
+# emacs backup folders
+*.backups
+
+# setuptools directories
+/build/
+/dist/
+
+# python egg metadata from setuptools
+/*.egg-info

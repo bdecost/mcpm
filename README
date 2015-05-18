@@ -1,0 +1,9 @@
+Monte Carlo grain growth solver
+kinetic or rejection MC schemes
+traditional or gaussian pixel neighborhood
+
+mcpm: grain growth solver
+
+visualization tools:
+mcpm-draw: draw a 2D snapshot
+mcpm-animate: make a movie from a series of snapshots
