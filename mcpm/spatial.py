@@ -2,6 +2,7 @@
 import numpy as np
 
 nbrlist = None
+neighbors = None
 
 def gaussian_mask(sites, radius, sigma_squared=1, a=None, cutoff=0.01):
   if a is None:
@@ -44,16 +45,16 @@ def neighbors(site, dims=None, radius=1):
 
 
 def build_neighbor_list(sites, radius=1):
+  global nbrlist
+  global neighbors
   print('building neighbor list')
   check_neighs = neighbors(0, dims=sites.shape, radius=radius)
   num_neighs = check_neighs.size
 
-  global nbrlist
   nbrlist = np.zeros((sites.size, num_neighs),dtype=int)
   for site in np.arange(sites.size):
     nbrlist[site] = neighbors(site, dims=sites.shape, radius=radius)
 
   # reassign neighbors function to use lookup list
-  global neighbors
   neighbors = lookup_neighbors
   return
