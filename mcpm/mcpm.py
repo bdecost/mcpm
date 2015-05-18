@@ -50,7 +50,8 @@ def main():
     weights = uniform_mask(sites, radius=1)
   elif args.nbrhd == 'gaussian':
     weights = gaussian_mask(sites, args.radius, a=args.norm,
-                        sigma_squared=np.square(args.sigma))
+                            sigma_squared=np.square(args.sigma),
+                            cutoff=args.cutoff)
 
   if args.style == 'reject':
     rejection.iterate(sites, weights, args)

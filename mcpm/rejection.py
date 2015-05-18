@@ -10,13 +10,13 @@ from . import spatial
 def site_event(site, kT, sites, weights):
   s = sites.ravel()
   current_state = s[site]
-  nearest = spatial.site_neighbors(site, dims=sites.shape, radius=1)
+  nearest = spatial.neighbors(site, None, dims=sites.shape, radius=1)
   states = np.unique(s[nearest])
   states = states[states != current_state]
   if states.size == 0:
     return current_state
 
-  neighs = site_neighbors(site, dims=sites.shape, radius=radius)
+  neighs = spatial.neighbors(site, None, dims=sites.shape, radius=radius)
   delta = s[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 

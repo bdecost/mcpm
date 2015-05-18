@@ -1,6 +1,8 @@
 """ pixel neighborhood definitions """
 import numpy as np
 
+nbrlist = None
+
 def gaussian_mask(sites, radius, sigma_squared=1, a=None, cutoff=0.01):
   if a is None:
     a = 1/(np.sqrt(2*sigma_squared*np.pi))
@@ -9,39 +11,49 @@ def gaussian_mask(sites, radius, sigma_squared=1, a=None, cutoff=0.01):
   square_dist = np.sum(np.square(list(dist)), axis=0)
   weights = a * np.exp(-0.5 * square_dist / sigma_squared)
   weights[weights < cutoff] = 0
-  return weights.flatten()
+  return weights.ravel()
 
 
 def uniform_mask(sites, radius=1):
   dims = tuple([2*radius+1 for __ in range(sites.ndim)])
-  return np.ones(dims).flatten()
-    
+  return np.ones(dims).ravel()
+
+
 def nearest_neighbor_mask(radius, ndim):
   id_range = np.arange(-radius,radius+1)
   dist = np.meshgrid( *[id_range for d in range(ndim)] )
   square_dist = np.sum(np.square(list(dist)), axis=0)
   nearest = np.zeros_like(square_dist, dtype=bool)
   nearest[square_dist <= 2] = 1
-  return nearest.flatten()
+  return nearest.ravel()
 
 
-def site_neighbors(site, dims=None, radius=1):
-  # square/cubic pixel neighborhood of 'radius' dist
-  # for 2 and 3 dimensional periodic images
+def lookup_neighbors(site, dims=None, radius=1):
+  return nbrlist[site]
+
+
+def neighbors(site, dims=None, radius=1):
+  """ N-dimensional pixel neighborhood
+      for periodic images on regular grids """
   index = np.unravel_index(site, dims=dims)
   id_range = [np.arange(idx-radius, idx+radius+1)
               for idx in index]
   neigh_ids = np.meshgrid(*id_range)
   neighs =  np.ravel_multi_index(neigh_ids,dims=dims, mode='wrap')
-  return neighs.flatten()
+  return neighs.ravel()
 
 
-def neighbor_list(sites, radius=1):
+def build_neighbor_list(sites, radius=1):
   print('building neighbor list')
-  check_neighs = site_neighbors(0, dims=sites.shape, radius=radius)
+  check_neighs = neighbors(0, dims=sites.shape, radius=radius)
   num_neighs = check_neighs.size
-  neighbors = np.zeros((sites.size, num_neighs),dtype=int)
-  for site in np.arange(sites.size):
-    neighbors[site] = site_neighbors(site, dims=sites.shape, radius=radius)
 
-  return neighbors
+  global nbrlist
+  nbrlist = np.zeros((sites.size, num_neighs),dtype=int)
+  for site in np.arange(sites.size):
+    nbrlist[site] = neighbors(site, dims=sites.shape, radius=radius)
+
+  # reassign neighbors function to use lookup list
+  global neighbors
+  neighbors = lookup_neighbors
+  return
