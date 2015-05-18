@@ -17,7 +17,7 @@ def main():
              description='''Kinetic Monte Carlo grain growth
                        simulations in 2 and 3 dimensions.''')
 
-  parser.add_argument('--infile', nargs='?', default='input.dream3d',
+  parser.add_argument('-i', '--infile', nargs='?', default='input.dream3d',
                       help='DREAM3D file containing initial structure')
   parser.add_argument('--style', default='kmc',
                       choices=['kmc', 'reject'],
@@ -31,7 +31,7 @@ def main():
                       help='pixel neighborhood radius')
   parser.add_argument('--kT', type=float, default=.001,
                       help='Monte Carlo temperature kT')
-  parser.add_argument('--length', type=float, default=100,
+  parser.add_argument('-l', '--length', type=float, default=100,
                       help='Simulation length in MCS')
   parser.add_argument('--cutoff', type=float, default=0.01,
                       help='interaction weight cutoff value')
