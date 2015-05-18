@@ -103,7 +103,7 @@ def iterate(sites, weights, options):
   kT = options.kT
   length = options.length
   dump_frequency = options.freq
-  
+
   time = 0
   neighbors = spatial.neighbor_list(sites, dist=dist)
   nearest = spatial.nearest_neighbor_mask(dist,sites.ndim)

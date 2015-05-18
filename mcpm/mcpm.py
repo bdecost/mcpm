@@ -5,8 +5,8 @@ traditional or gaussian pixel neighborhood
 """
 
 from . import io
-from . import kmc
-from . import rmc
+from . import kinetic
+from . import rejection
 from .spatial import uniform_mask, gaussian_mask
 
 import argparse
@@ -53,7 +53,7 @@ def main():
                         sigma_squared=np.square(args.sigma))
 
   if args.style == 'reject':
-    rmc.iterate(sites, args.kT, weights, args.length, dist=args.radius)
+    rejection.iterate(sites, args.kT, weights, args.length, dist=args.radius)
   elif args.style == 'kmc':
-    kmc.iterate(sites, weights, args)
+    kinetic.iterate(sites, weights, args)
     
