@@ -3,21 +3,34 @@
 import numpy as np
 from misori import misori
 
+# grain growth model parameters
+# find the best way to set these at runtime
+high_angle = np.pi*30/180
+mobility_ratio = 0.001
+energy_ratio = 0.5
 
-def uniform_mobility(qa, qb):
+def energy(*args):
+  return uniform_energy()
+
+
+def mobility(*args):
+  return uniform_mobility()
+
+
+def uniform_mobility(*args):
   return 1
 
 
-def uniform_energy(qa, qb):
+def uniform_energy(*args):
   return 1
 
 
-def threshold_mobility(qa, qb, threshold=np.pi*30/180, ratio=0.001):
+def threshold_mobility(qa, qb):
   angle = misori(qa, qb)
-  return ratio if angle < threshold else 1
+  return mobility_ratio if angle < high_angle else 1
 
 
-def threshold_energy(qa, qb, threshold=np.pi*30/180, ratio=0.5):
+def threshold_energy(qa, qb):
   angle = misori(qa, qb)
-  return ratio if angle < threshold else 1
+  return energy_ratio if angle < high_angle else 1
   

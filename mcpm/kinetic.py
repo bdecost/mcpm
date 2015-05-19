@@ -6,6 +6,7 @@ import argparse
 
 from . import io
 from . import spatial
+from . import grainboundary as gb
 
 radius = 1
 dims = None
