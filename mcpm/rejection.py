@@ -1,7 +1,6 @@
 """ Rejection Monte Carlo solver """
 
 import numpy as np
-import pandas as pd
 import argparse
 
 from . import io

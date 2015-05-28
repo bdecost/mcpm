@@ -1,7 +1,6 @@
 """ Kinetic Monte Carlo solver """
 
 import numpy as np
-import pandas as pd
 import argparse
 
 from . import io
@@ -16,7 +15,7 @@ def site_propensity(site, nearest, kT, sites, weights):
   neighs = spatial.neighbors(site, dims=dims, radius=radius)
   nearest_sites = neighs[nearest]
   nearest_states = sites[nearest_sites]
-  states = pd.unique(nearest_states) # pd.unique faster than np.unique
+  states = np.unique(nearest_states)
   states = states[states != current_state]
   if states.size == 0:
     return 0
@@ -46,7 +45,7 @@ def site_event(site, nearest, kT, weights, sites, propensity):
   current_state = sites[site]
   neighs = spatial.neighbors(site, dims=dims, radius=radius)
   nearest_sites = neighs[nearest]
-  states = pd.unique(sites[nearest_sites]) # pd.unique faster than np.unique
+  states = np.unique(sites[nearest_sites])
   states = states[states != current_state]
 
   delta = sites[neighs] != current_state
