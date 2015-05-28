@@ -42,6 +42,8 @@ def main():
   parser.add_argument('--neighborlist', action='store_true',
                       help='''Compute explicit neighbor lists.
                               Problematic with large 3D systems.''')
+  parser.add_argument('--mobility', type=float, default=1.0,
+                      help='''use misorientation-threshold mobility. This is the mobility ratio.''')
   
   args = parser.parse_args()
   sites = io.load_dream3d(args.infile)

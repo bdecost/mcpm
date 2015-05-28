@@ -1,11 +1,14 @@
 """ draw 2D simulation snapshots """
+# import matplotlib
+# matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 
 import numpy as np
 import h5py
 import os
 import glob
 from skimage.segmentation import find_boundaries
-import matplotlib.pyplot as plt
 import argparse
 import subprocess
 
@@ -19,6 +22,7 @@ def rodrigues_colormap(quats):
   fz_half = np.tan(np.pi/8) # half cubic fundamental zone width
   rf = [misori.fz_rod(q)+fz_half for q in quats]
   return {index: a / (2*np.tan(np.pi/8)) for index, a in enumerate(rf)}
+
 
 def map_colors(sites, color_map):
   ''' apply color mapping and fill in boundaries '''
@@ -72,13 +76,15 @@ def draw_snapshot():
                       help='save image file to this path')
   parser.add_argument('-c', '--color', nargs='?', default='grain_id',
                       help='color scheme')
+  parser.add_argument('--initial', nargs='?', default='input.dream3d',
+                      help='initial snapshot with quaternions')
 
   args = parser.parse_args()
   
   sites = io.load_dream3d(args.infile)
   cmap = None
   if args.color == 'quaternion':
-    quats = io.load_quaternions(args.infile)
+    quats = io.load_quaternions(args.initial)
     cmap = rodrigues_colormap(quats)
   draw(sites, colormap=cmap, outfile=args.outfile)
 
@@ -94,9 +100,12 @@ def animate_snapshots():
                       help='clean up temporary image files')
   parser.add_argument('-c', '--color', nargs='?', default='grain_id',
                       help='color scheme')
+  parser.add_argument('--initial', nargs='?', default='input.dream3d',
+                      help='initial snapshot with quaternions')
 
   args = parser.parse_args()
 
+  plt.switch_backend('Agg')
   tmpdir = 'tmp'
   try:
     os.mkdir(tmpdir)
@@ -114,7 +123,7 @@ def animate_snapshots():
     if (vmin, vmax) == (0,0):
       vmax = s.max()
       if args.color == 'quaternion':
-        quats = io.load_quaternions(args.infile)
+        quats = io.load_quaternions(args.initial)
         cmap = rodrigues_colormap(quats)
     draw(s, '{}/{}.png'.format(tmpdir,name),
          colormap=cmap, vmin=0, vmax=vmax)

@@ -30,11 +30,12 @@ def site_propensity(site, nearest, kT, sites, weights):
     delta = sites[neighs] != proposed_state
     proposed_energy = np.sum(np.multiply(delta, weights))
     energy_change = proposed_energy - current_energy
-  
+
+    mobility = gb.mobility(current_state, proposed_state)
     if energy_change <= 0:
-      prob += 1
+      prob += mobility
     elif kT > 0.0:
-      prob += np.exp(-energy_change/kT)
+      prob += mobility * np.exp(-energy_change/kT)
 
   sites[site] = current_state
   return prob
@@ -57,11 +58,12 @@ def site_event(site, nearest, kT, weights, sites, propensity):
     delta = sites[neighs] != proposed_state
     proposed_energy = np.sum(np.multiply(delta, weights))
     energy_change = proposed_energy - current_energy
-  
+
+    mobility = gb.mobility(current_state, proposed_state)
     if energy_change <= 0:
-      prob += 1
+      prob += mobility
     elif kT > 0.0:
-      prob += np.exp(-energy_change/kT)
+      prob += mobility * np.exp(-energy_change/kT)
     if prob >= threshold:
       break
 
@@ -116,6 +118,7 @@ def iterate(sites, weights, options):
   neighbors = None
   if options.neighborlist:
     spatial.build_neighbor_list(sites, radius=radius)
+  gb.setup(options)
   nearest = spatial.nearest_neighbor_mask(radius,sites.ndim)
   propensity = all_propensity(sites.ravel(),
                               nearest, kT, weights)

@@ -50,9 +50,11 @@ def build_neighbor_list(sites, radius=1):
   print('building neighbor list')
   check_neighs = neighbors(0, dims=sites.shape, radius=radius)
   num_neighs = check_neighs.size
-
+  print('each site has {} neighbors'.format(num_neighs-1))
+  
   nbrlist = np.zeros((sites.size, num_neighs),dtype=int)
-  for site, __ in np.ndenumerate(sites):
+  for index, __ in np.ndenumerate(sites):
+    site = np.ravel_multi_index(index, sites.shape)
     nbrlist[site] = neighbors(site, dims=sites.shape, radius=radius)
 
   # reassign neighbors function to use lookup list
