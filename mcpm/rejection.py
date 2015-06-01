@@ -1,9 +1,10 @@
 """ Rejection Monte Carlo solver """
 
-import numpy as np
 import argparse
+import numpy as np
 
 from . import io
+from . import stats
 from . import spatial
 
 def site_event(site, kT, sites, weights):
@@ -57,10 +58,12 @@ def iterate(sites, weights, options):
   for time in np.arange(0, length+1, dump_frequency):
     print('time: {}'.format(time))
     io.dump_dream3d(sites, time)
+    stats.compute(sites, time)
     accepts = time*sites.size - rejects
     print('accepts: {}, rejects: {}'.format(accepts,rejects))
     for step in range(dump_frequency):
       rej = timestep(sites, kT, weights)
       rejects += rej
   io.dump_dream3d(sites, time)
+  stats.compute(sites, time)
   return

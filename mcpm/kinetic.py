@@ -1,9 +1,10 @@
 """ Kinetic Monte Carlo solver """
 
-import numpy as np
 import argparse
+import numpy as np
 
 from . import io
+from . import stats
 from . import spatial
 from . import grainboundary as gb
 
@@ -125,10 +126,12 @@ def iterate(sites, weights, options):
     inner_time = 0
     print('time: {}'.format(time))
     io.dump_dream3d(sites, int(time))
+    stats.compute(sites, time=time)
     while inner_time < dump_frequency:
       site, time_step = select_site(propensity)
       site_event(site, nearest, kT, weights, sites.ravel(), propensity)
       inner_time += time_step
     time += inner_time
   io.dump_dream3d(sites, int(time))
+  stats.compute(sites, time=time)
   return time

@@ -5,6 +5,7 @@ traditional or gaussian pixel neighborhood
 """
 
 from . import io
+from . import stats
 from . import kinetic
 from . import rejection
 from .spatial import uniform_mask, gaussian_mask
@@ -44,10 +45,15 @@ def main():
                               Problematic with large 3D systems.''')
   parser.add_argument('--mobility', type=float, default=1.0,
                       help='''use misorientation-threshold mobility. This is the mobility ratio.''')
+  parser.add_argument('--statsfile', nargs='?', default='stats.h5',
+                      help='HDF5 file for grain growth stats')
+
   
   args = parser.parse_args()
   sites = io.load_dream3d(args.infile)
 
+  stats.initialize(sites, args)
+  
   if args.nbrhd == 'uniform':
     weights = uniform_mask(sites, radius=args.radius)
   elif args.nbrhd == 'gaussian':
@@ -59,4 +65,5 @@ def main():
     rejection.iterate(sites, weights, args)
   elif args.style == 'kmc':
     kinetic.iterate(sites, weights, args)
-    
+
+  stats.finalize()
