@@ -49,7 +49,7 @@ def main():
   sites = io.load_dream3d(args.infile)
 
   if args.nbrhd == 'uniform':
-    weights = uniform_mask(sites, radius=1)
+    weights = uniform_mask(sites, radius=args.radius)
   elif args.nbrhd == 'gaussian':
     weights = gaussian_mask(sites, args.radius, a=args.norm,
                             sigma_squared=np.square(args.sigma),
