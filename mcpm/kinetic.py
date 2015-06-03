@@ -2,11 +2,13 @@
 
 import argparse
 import numpy as np
+import cython
 
 from . import io
 from . import stats
 from . import spatial
 from . import grainboundary as gb
+from .utils.unique import _unique
 
 radius = 1
 dims = None
@@ -16,7 +18,7 @@ def site_propensity(site, nearest, kT, sites, weights):
   neighs = spatial.neighbors(site, dims=dims, radius=radius)
   nearest_sites = neighs[nearest]
   nearest_states = sites[nearest_sites]
-  states = np.unique(nearest_states)
+  states = _unique(nearest_states.astype(np.int32))
   states = states[states != current_state]
   if states.size == 0:
     return 0
@@ -46,7 +48,8 @@ def site_event(site, nearest, kT, weights, sites, propensity):
   current_state = sites[site]
   neighs = spatial.neighbors(site, dims=dims, radius=radius)
   nearest_sites = neighs[nearest]
-  states = np.unique(sites[nearest_sites])
+  nearest_states = sites[nearest_sites]
+  states = _unique(nearest_states.astype(np.int32))
   states = states[states != current_state]
 
   delta = sites[neighs] != current_state
@@ -116,6 +119,8 @@ def iterate(sites, weights, options):
 
   time = 0
   neighbors = None
+  if options.neighborfile:
+    spatial.load_neighbor_list(options.neighborfile)
   if options.neighborlist:
     spatial.build_neighbor_list(sites, radius=radius)
   gb.setup(options)

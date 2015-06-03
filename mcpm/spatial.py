@@ -46,6 +46,9 @@ def neighbors(site, dims=None, radius=1):
 
 def build_neighbor_list(sites, radius=1):
   global nbrlist
+  if nbrlist is not None:
+    print('nbrlist already exists')
+    return
   global neighbors
   print('building neighbor list')
   check_neighs = neighbors(0, dims=sites.shape, radius=radius)
@@ -60,3 +63,11 @@ def build_neighbor_list(sites, radius=1):
   # reassign neighbors function to use lookup list
   neighbors = lookup_neighbors
   return
+
+def load_neighbor_list(neighborpath):
+  global nbrlist
+  global neighbors
+  nbrlist = np.load(neighborpath)
+  neighbors = lookup_neighbors
+  return
+

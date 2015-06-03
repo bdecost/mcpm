@@ -47,7 +47,7 @@ def main():
                       help='''use misorientation-threshold mobility. This is the mobility ratio.''')
   parser.add_argument('--statsfile', nargs='?', default='stats.h5',
                       help='HDF5 file for grain growth stats')
-
+  parser.add_argument('--neighborfile', nargs='?', default='')
   
   args = parser.parse_args()
   sites = io.load_dream3d(args.infile)
