@@ -3,8 +3,10 @@ import numpy as np
 cimport numpy as np
 import cython
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
+# profiling suggests removing bounds checking doesn't
+#   increase performance very significantly
+# @cython.boundscheck(False)
+# @cython.wraparound(False)
 def _unique(np.ndarray[np.int32_t,ndim=1] arr not None):
   cdef int imax = arr.size
   cdef np.ndarray[np.int32_t,ndim=1] unique = np.empty(imax, dtype=np.int32)

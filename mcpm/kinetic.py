@@ -18,7 +18,8 @@ def site_propensity(site, nearest, kT, sites, weights):
   neighs = spatial.neighbors(site, dims=dims, radius=radius)
   nearest_sites = neighs[nearest]
   nearest_states = sites[nearest_sites]
-  states = _unique(nearest_states.astype(np.int32))
+  # states = _unique(nearest_states.astype(np.int32))
+  states = _unique(nearest_states)
   states = states[states != current_state]
   if states.size == 0:
     return 0
