@@ -53,6 +53,7 @@ def iterate(sites, weights, options):
   kT = options.kT
   length = options.length
   dump_frequency = options.freq
+  spatial.setup(sites, options)
 
   rejects = 0
   for time in np.arange(0, length+1, dump_frequency):

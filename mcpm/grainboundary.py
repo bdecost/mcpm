@@ -54,5 +54,6 @@ def setup(options):
   if mobility_ratio != 1.0:
     quaternions = io.load_quaternions(options.infile)
     mobility = threshold_mobility
-
+  high_angle = options.angle*np.pi/180
+  
 mobility = uniform_mobility

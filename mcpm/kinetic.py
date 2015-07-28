@@ -48,16 +48,24 @@ def site_event(site, nearest, kT, weights, sites, propensity):
   current_state = sites[site]
   neighs = spatial.neighbors(site, dims=dims, radius=radius)
   nearest_sites = neighs[nearest]
+  # print(site)
+  # print(sites[neighs].reshape((3,3)))
+  # print(nearest_sites.reshape((3,3)))
   nearest_states = sites[nearest_sites]
+  # print(nearest_states.reshape((3,3)))
   states = _unique(nearest_states.astype(np.int32))
   states = states[states != current_state]
+  # print(states)
 
   delta = sites[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 
   prob = 0
+  # np.random.shuffle(states)
   for proposed_state in states:
+    # print('proposed state: {}'.format(proposed_state))
     sites[site] = proposed_state
+    # print(sites[neighs].reshape((3,3)))
     delta = sites[neighs] != proposed_state
     proposed_energy = np.sum(np.multiply(delta, weights))
     energy_change = proposed_energy - current_energy
@@ -70,7 +78,7 @@ def site_event(site, nearest, kT, weights, sites, propensity):
     if prob >= threshold:
       break
 
-  neighs = neighs[np.nonzero(weights)]
+  # neighs = neighs[np.nonzero(weights)]
   for neigh in np.nditer(neighs):
     propensity[neigh] = site_propensity(neigh, nearest,
                                         kT, sites, weights)
@@ -118,11 +126,7 @@ def iterate(sites, weights, options):
   dump_frequency = options.freq
 
   time = 0
-  neighbors = None
-  if options.neighborfile:
-    spatial.load_neighbor_list(options.neighborfile)
-  if options.neighborlist:
-    spatial.build_neighbor_list(sites, radius=radius)
+  spatial.setup(sites, options)
   gb.setup(options)
   nearest = spatial.nearest_neighbor_mask(radius,sites.ndim)
   propensity = all_propensity(sites.ravel(),

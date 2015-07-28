@@ -23,6 +23,12 @@ def rodrigues_colormap(quats):
   rf = [misori.fz_rod(q)+fz_half for q in quats]
   return {index: a / (2*np.tan(np.pi/8)) for index, a in enumerate(rf)}
 
+def binary_colormap(quats):
+  cmap = {1: np.array([1.0, 1.0, 1.0]),
+          2: np.array([.45, .57, 0.63]),
+          3: np.array([0.6, 0.0, 0.0])}
+  return {i: cmap[np.sum(quats[i,:] > 0)]
+          for i in range(1,quats.shape[0])}
 
 def map_colors(sites, color_map):
   ''' apply color mapping and fill in boundaries '''
@@ -33,8 +39,30 @@ def map_colors(sites, color_map):
   colors[find_boundaries(sites), :] = np.array([.3,.3,.3])
   return colors
 
+def mark_grain(sites, grain, idgrain):
+  colors = ['r', 'g', 'b', 'y', 'c', 'm', 'k']
 
-def draw(sites, outfile=None, colormap=None, vmin=None, vmax=None):
+  # get grain centroids
+  index = np.indices(sites.shape)
+  idx , idy = index[0], index[1]
+  size_x, size_y = sites.shape
+  mask = sites == grain
+  if np.any(mask):
+    y, x = idy[mask], idx[mask]
+    # fix periodic boundary splinching
+    if np.max(y) - np.min(y) == size_y-1:
+      y[y < size_y/2] += size_y
+    if np.max(x) - np.min(x) == size_x-1:
+      x[x < size_x/2] += size_x
+    y, x = np.mean(y), np.mean(x)
+    y = y if y < size_y else y - size_y
+    x = x if x < size_x else x - size_x
+    # use image coordinates -- forgot to change imshow
+    plt.scatter(y, x, color=colors[idgrain], edgecolor='w')
+  return
+
+def draw(sites, outfile=None, colormap=None,
+         vmin=None, vmax=None, mark_grains=[]):
   cmap = None
   if colormap is not None:
     colors = map_colors(sites, colormap)
@@ -45,11 +73,13 @@ def draw(sites, outfile=None, colormap=None, vmin=None, vmax=None):
   plt.imshow(colors, interpolation='none',
              cmap=cmap,
              vmin=vmin, vmax=vmax, origin='lower')
+  for idg,grain in enumerate(mark_grains):
+    mark_grain(sites, grain, idg) # calls plt.plot
   if outfile is not None:
     plt.savefig(outfile)
     plt.clf()
   else:
-    plt.show()
+    return
 
 def propensity(sites, outfile=None):
   return  
@@ -90,8 +120,8 @@ def draw_snapshot():
 
 
 def animate_snapshots():
-  parser = argparse.ArgumentParser(prog='draw-snapshot',
-             description='''Draw a 2D snapshot from a DREAM3D file''')
+  parser = argparse.ArgumentParser(prog='mcpm-animate',
+             description='''Animate 2D snapshots from DREAM3D sequence''')
   parser.add_argument('-i', '--snapshots', nargs='+', required=True,
                       help='list of dream3d snapshots to animate')
   parser.add_argument('-o', '--outfile', nargs='?', default='grains.gif',
@@ -102,16 +132,19 @@ def animate_snapshots():
                       help='color scheme')
   parser.add_argument('--initial', nargs='?', default='input.dream3d',
                       help='initial snapshot with quaternions')
+  parser.add_argument('--ffmpeg', action='store_true',
+                      help='use ffmpeg -> *.mov instead of imagemagick')
 
   args = parser.parse_args()
 
   plt.switch_backend('Agg')
-  tmpdir = 'tmp'
+  tmpdir = 'temp'
   try:
     os.mkdir(tmpdir)
   except FileExistsError:
     pass
-
+  mark_grains = [] # list of grains to mark
+  # mark_grains = [158, 2136, 2482, 300, 335, 39, 823]
   print('processing snapshots')
   args.snapshots.sort()
   vmin, vmax = 0, 0
@@ -125,14 +158,23 @@ def animate_snapshots():
       if args.color == 'quaternion':
         quats = io.load_quaternions(args.initial)
         cmap = rodrigues_colormap(quats)
+      elif args.color == 'binary':
+        quats = io.load_quaternions(args.initial)
+        cmap = binary_colormap(quats)
+
     draw(s, '{}/{}.png'.format(tmpdir,name),
-         colormap=cmap, vmin=0, vmax=vmax)
+         colormap=cmap, vmin=0, vmax=vmax,
+         mark_grains=mark_grains)
 
   images = glob.glob('{}/*.png'.format(tmpdir))
   images.sort()
-  print('calling imagemagick')
-  subprocess.call(['convert'] + images + ['-delay', '25', args.outfile])
-
+  if not args.ffmpeg: 
+    print('calling imagemagick')
+    subprocess.call(['convert'] + images + ['-delay', '25', args.outfile])
+  else:
+    print('calling ffmpeg')
+    subprocess.call(['ffmpeg'] + '-i temp/dump%04d.png -codec png grains.mov'.split(' '))
+    
   if args.cleanup:
     print('cleaning up')
     for i in images:

@@ -8,7 +8,7 @@ from . import io
 from . import stats
 from . import kinetic
 from . import rejection
-from .spatial import uniform_mask, gaussian_mask
+from .spatial import uniform_mask, gaussian_mask, strained_mask
 
 import argparse
 import numpy as np
@@ -24,7 +24,7 @@ def main():
                       choices=['kmc', 'reject'],
                       help='Monte Carlo style')
   parser.add_argument('--nbrhd', nargs='?', default='gaussian',
-                      choices=['uniform', 'gaussian'],
+                      choices=['uniform', 'gaussian', 'strained'],
                       help='pixel neighborhood weighting')
   parser.add_argument('--sigma', type=float, default=3,
                       help='smoothing parameter for gaussian neighborhood')
@@ -45,6 +45,8 @@ def main():
                               Problematic with large 3D systems.''')
   parser.add_argument('--mobility', type=float, default=1.0,
                       help='''use misorientation-threshold mobility. This is the mobility ratio.''')
+  parser.add_argument('--angle', type=float, default=30.0,
+                      help='high angle boundary cutoff in degrees')
   parser.add_argument('--statsfile', nargs='?', default='stats.h5',
                       help='HDF5 file for grain growth stats')
   parser.add_argument('--neighborfile', nargs='?', default='')
@@ -56,6 +58,8 @@ def main():
   
   if args.nbrhd == 'uniform':
     weights = uniform_mask(sites, radius=args.radius)
+  elif args.nbrhd == 'strained':
+    weights = strained_mask(sites, radius=args.radius, strain=0.1)
   elif args.nbrhd == 'gaussian':
     weights = gaussian_mask(sites, args.radius, a=args.norm,
                             sigma_squared=np.square(args.sigma),
