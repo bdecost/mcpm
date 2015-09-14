@@ -18,7 +18,8 @@ def site_propensity(site, nearest, kT, sites, weights):
   neighs = spatial.neighbors(site, dims=dims, radius=radius)
   nearest_sites = neighs[nearest]
   nearest_states = sites[nearest_sites]
-  states = _unique(nearest_states)
+  # states = _unique(np.ascontiguousarray(nearest_states.astype(np.int32)))
+  states = np.unique(nearest_states)
   states = states[states != current_state]
   if states.size == 0:
     return 0
@@ -48,24 +49,18 @@ def site_event(site, nearest, kT, weights, sites, propensity):
   current_state = sites[site]
   neighs = spatial.neighbors(site, dims=dims, radius=radius)
   nearest_sites = neighs[nearest]
-  # print(site)
-  # print(sites[neighs].reshape((3,3)))
-  # print(nearest_sites.reshape((3,3)))
   nearest_states = sites[nearest_sites]
-  # print(nearest_states.reshape((3,3)))
-  states = _unique(nearest_states.astype(np.int32))
+
+  # states = _unique(np.ascontiguousarray(nearest_states.astype(np.int32)))
+  states = np.unique(nearest_states)
   states = states[states != current_state]
-  # print(states)
 
   delta = sites[neighs] != current_state
   current_energy = np.sum(np.multiply(delta, weights))
 
   prob = 0
-  # np.random.shuffle(states)
   for proposed_state in states:
-    # print('proposed state: {}'.format(proposed_state))
     sites[site] = proposed_state
-    # print(sites[neighs].reshape((3,3)))
     delta = sites[neighs] != proposed_state
     proposed_energy = np.sum(np.multiply(delta, weights))
     energy_change = proposed_energy - current_energy

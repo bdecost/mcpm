@@ -9,7 +9,7 @@ import cython
 # @cython.wraparound(False)
 def _unique(np.ndarray[np.int32_t,ndim=1] arr not None):
   cdef int imax = arr.size
-  cdef np.ndarray[np.int32_t,ndim=1] unique = np.empty(imax, dtype=np.int32)
+  cdef np.ndarray[np.int32_t,ndim=1] unique = np.zeros(imax, dtype=np.int32)
   cdef int i, j
   cdef int n_unq = 0
   cdef int value

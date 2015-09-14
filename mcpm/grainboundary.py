@@ -50,6 +50,7 @@ def setup(options):
   global quaternions
   global mobility
   global mobility_ratio
+  global high_angle
   mobility_ratio = options.mobility
   if mobility_ratio != 1.0:
     quaternions = io.load_quaternions(options.infile)

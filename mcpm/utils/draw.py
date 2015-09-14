@@ -88,13 +88,14 @@ def sequence(tmpdir='images'):
   snapshots = glob.glob('dump*.dream3d')
   snapshots.sort()
   vmin, vmax = 0, 0
-  for snapshot in snapshots:
+  for i,snapshot in enumerate(snapshots):
     print(snapshot)
-    name, ext = os.path.splitext(snapshot)
+    # name, ext = os.path.splitext(snapshot)
+    outfile = 'snapshot{0:04d}.png'.format(i)
     s = load_dream3d(snapshot)
     if (vmin, vmax) == (0,0):
       vmax = s.max()
-    draw(s, '{}/{}.png'.format(tmpdir,name), vmin=0, vmax=vmax)
+    draw(s, '{}/{}'.format(tmpdir,outfile), vmin=0, vmax=vmax)
 
 
 def draw_snapshot():
@@ -149,9 +150,10 @@ def animate_snapshots():
   args.snapshots.sort()
   vmin, vmax = 0, 0
   cmap = None
-  for snapshot in args.snapshots:
+  for i,snapshot in enumerate(args.snapshots):
     print(snapshot)
-    name, ext = os.path.splitext(snapshot)
+    # name, ext = os.path.splitext(snapshot)
+    name = 'snapshot{:04d}'.format(i)
     s = io.load_dream3d(snapshot)
     if (vmin, vmax) == (0,0):
       vmax = s.max()
@@ -173,7 +175,7 @@ def animate_snapshots():
     subprocess.call(['convert'] + images + ['-delay', '25', args.outfile])
   else:
     print('calling ffmpeg')
-    subprocess.call(['ffmpeg'] + '-i temp/dump%04d.png -codec png grains.mov'.split(' '))
+    subprocess.call(['ffmpeg'] + '-i temp/snapshot%04d.png -codec png grains.mov'.split(' '))
     
   if args.cleanup:
     print('cleaning up')
