@@ -33,7 +33,7 @@ def save_prng_state(path):
     try:
       f[PRNG_STATE_PATH][...] = state[1]
     except KeyError:
-      f[PRNG_STATE] = state[1]
+      f[PRNG_STATE_PATH] = state[1]
   return
 
 def dump_dream3d(sites, time, prefix='mcpm_dump'):
