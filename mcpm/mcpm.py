@@ -50,10 +50,17 @@ def main():
   parser.add_argument('--statsfile', nargs='?', default='stats.h5',
                       help='HDF5 file for grain growth stats')
   parser.add_argument('--neighborfile', nargs='?', default='')
+  parser.add_argument('--load_prng_state', action='store_true',
+                      help='use the PRNG state stored in the input file')
   
   args = parser.parse_args()
   sites = io.load_dream3d(args.infile)
 
+  if args.load_prng_state:
+    io.load_prng_state(args.infile)
+  else:
+    io.save_prng_state(args.infile)
+  
   stats.initialize(sites, args)
   
   if args.nbrhd == 'uniform':
