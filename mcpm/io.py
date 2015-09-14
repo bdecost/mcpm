@@ -8,9 +8,8 @@ QUATERNION_PATH = 'DataContainers/SyntheticVolume/CellFeatureData/AvgQuats'
 PRNG_STATE_PATH = 'DataContainers/SytheticVolume/prng_state'
 
 def load_dream3d(path):
-  f = h5py.File(path, 'r')
-  grain_ids = np.array(f[GRAIN_ID_PATH])
-  f.close()
+  with h5py.File(path, 'r') as f:
+    grain_ids = np.array(f[GRAIN_ID_PATH])
   shape = tuple([s for s in grain_ids.shape if s > 1])
   return grain_ids.reshape(shape)
 
@@ -37,13 +36,11 @@ def save_prng_state(path):
 
 def dump_dream3d(sites, time):
   path = 'dump{0:06d}.dream3d'.format(time)
-  f = h5py.File(path)
-  f[GRAIN_ID_PATH] = sites
-  f.close()
+  with h5py.File(path) as f:
+    f[GRAIN_ID_PATH] = sites
   return
 
 def load_quaternions(path):
-  f = h5py.File(path, 'r')
-  quaternions = np.array(f[QUATERNION_PATH], dtype=np.float32)
-  f.close()
+  with h5py.File(path, 'r') as f:
+    quaternions = np.array(f[QUATERNION_PATH], dtype=np.float32)
   return quaternions
