@@ -30,7 +30,10 @@ def save_prng_state(path):
   # the important part is the 624 element array of integers.
   state = np.random.get_state()
   with h5py.File(path) as f:
-    f[PRNG_STATE_PATH][...] = state[1]
+    try:
+      f[PRNG_STATE_PATH][...] = state[1]
+    except KeyError:
+      f[PRNG_STATE] = state[1]
   return
 
 def dump_dream3d(sites, time, prefix='mcpm_dump'):
