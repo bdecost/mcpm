@@ -52,6 +52,8 @@ def main():
   parser.add_argument('--neighborfile', nargs='?', default='')
   parser.add_argument('--load_prng_state', action='store_true',
                       help='use the PRNG state stored in the input file')
+  parser.add_argument('--nodump', action='store_true',
+                      help='no dream3d dump files.')
   
   args = parser.parse_args()
   sites = io.load_dream3d(args.infile)

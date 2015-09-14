@@ -22,8 +22,7 @@ def load_prng_state(path):
       np.random.set_state(tuple(state))
     except KeyError:
       print('unable to load saved state')
-      save_prng_state(path)
-      
+      save_prng_state(path)      
   return
 
 def save_prng_state(path):
@@ -31,11 +30,11 @@ def save_prng_state(path):
   # the important part is the 624 element array of integers.
   state = np.random.get_state()
   with h5py.File(path) as f:
-      f[PRNG_STATE_PATH] = state[1]
+    f[PRNG_STATE_PATH][...] = state[1]
   return
 
-def dump_dream3d(sites, time):
-  path = 'dump{0:06d}.dream3d'.format(time)
+def dump_dream3d(sites, time, prefix='mcpm_dump'):
+  path = '{0}{1:06d}.dream3d'.format(prefix, time)
   with h5py.File(path) as f:
     f[GRAIN_ID_PATH] = sites
   return
