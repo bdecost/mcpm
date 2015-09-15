@@ -79,4 +79,5 @@ def main():
   elif args.style == 'kmc':
     kinetic.iterate(sites, weights, args)
 
+  io.save_args(args)
   stats.finalize()

@@ -6,6 +6,7 @@ import h5py
 GRAIN_ID_PATH = 'DataContainers/SyntheticVolume/CellData/FeatureIds'
 QUATERNION_PATH = 'DataContainers/SyntheticVolume/CellFeatureData/AvgQuats'
 PRNG_STATE_PATH = 'DataContainers/SytheticVolume/prng_state'
+ARGS_PATH = 'DataContainers/SytheticVolume/mcpm_args'
 
 def load_dream3d(path):
   with h5py.File(path, 'r') as f:
@@ -46,3 +47,25 @@ def load_quaternions(path):
   with h5py.File(path, 'r') as f:
     quaternions = np.array(f[QUATERNION_PATH], dtype=np.float32)
   return quaternions
+
+def save_args(args):
+  """ save command line arguments """
+  with h5py.File(args.infile) as f:
+    try:
+      f.create_group(ARGSPATH)
+    except ValueError:
+      del f[ARGSPATH]
+    h_args = f[ARGSPATH]
+    for key, value in args.__dict__.items():
+      h_args[key] = value
+
+  return
+
+def load_prev_args(args):
+  """ load args from a previous run 
+      modifies values in the arguments namespace """
+  with h5py.File(args.infile) as f:
+    h_args = f[ARGSPATH]
+    for key in args.__dict__.keys():
+      args.__dict__[key] = h_args[key].value
+  return args
