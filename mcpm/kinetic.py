@@ -129,7 +129,7 @@ def iterate(sites, weights, options):
   while time < length:
     inner_time = 0
     print('time: {}'.format(time))
-    if not args.nodump:
+    if not options.nodump:
       io.dump_dream3d(sites, int(time))
     stats.compute(sites, time=time)
     while inner_time < dump_frequency:
@@ -137,7 +137,7 @@ def iterate(sites, weights, options):
       site_event(site, nearest, kT, weights, sites.ravel(), propensity)
       inner_time += time_step
     time += inner_time
-  if not args.nodump:
+  if not options.nodump:
     io.dump_dream3d(sites, int(time))
   stats.compute(sites, time=time)
   return time
