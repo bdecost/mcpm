@@ -149,6 +149,8 @@ def animate_snapshots():
   mark_grains = [] # list of grains to mark
   # mark_grains = [158, 2136, 2482, 300, 335, 39, 823]
   print('processing snapshots')
+  if '*' in snapshots:
+    snapshots = glob.glob(snapshots)
   args.snapshots.sort()
   vmin, vmax = 0, 0
   cmap = None
