@@ -122,9 +122,9 @@ def draw_snapshot():
 
 def animate_snapshots():
   parser = argparse.ArgumentParser(prog='mcpm-animate',
-             description='''Animate 2D snapshots from DREAM3D sequence''')
+             description='''Animate 2D snapshots from file sequence''')
   parser.add_argument('-i', '--snapshots', nargs='+', required=True,
-                      help='list of dream3d snapshots to animate')
+                      help='list of snapshots to animate')
   parser.add_argument('-o', '--outfile', nargs='?', default='grains.gif',
                       help='save image file to this path')
   parser.add_argument('--cleanup', action='store_true',
@@ -133,6 +133,8 @@ def animate_snapshots():
                       help='color scheme')
   parser.add_argument('--initial', nargs='?', default='input.dream3d',
                       help='initial snapshot with quaternions')
+  parser.add_argument('--format', choices=['dream3d', 'spparks'], default='dream3d',
+                      help='input file format')
   parser.add_argument('--ffmpeg', action='store_true',
                       help='use ffmpeg -> *.mov instead of imagemagick')
 
@@ -154,7 +156,10 @@ def animate_snapshots():
     print(snapshot)
     # name, ext = os.path.splitext(snapshot)
     name = 'snapshot{:04d}'.format(i)
-    s = io.load_dream3d(snapshot)
+    if args.format == 'dream3d':
+      s = io.load_dream3d(snapshot)
+    elif args.format == 'spparks':
+      s = io.load_spparks(snapshot)
     if (vmin, vmax) == (0,0):
       vmax = s.max()
       if args.color == 'quaternion':

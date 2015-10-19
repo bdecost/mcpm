@@ -14,6 +14,33 @@ def load_dream3d(path):
   shape = tuple([s for s in grain_ids.shape if s > 1])
   return grain_ids.reshape(shape)
 
+def dimensions(dim_line):
+    min_val, max_val = dim_line.split()
+    return int(float(max_val) - float(min_val))
+
+def load_spparks(path):
+  """ load microstructure from spparks text dump """
+  grain_ids = None
+  with open(path, 'r') as f:
+    for line in f:
+      if "TIMESTEP" in line:
+        time = next(f) # float()
+      elif "NUMBER" in line:
+        num_sites = next(f) # float()
+      elif "BOX" in line:
+        x = dimensions(next(f))
+        y = dimensions(next(f))
+        z = dimensions(next(f))
+        grain_ids = np.zeros((x,y,z))
+        # skip forward two lines
+        next(f); line = next(f)
+      else:
+        # get id, spin, x, y, z
+        idx, grain_id, x, y, z = map(int, line.split())
+        grain_ids[(x,y,z)] = grain_id
+    shape = tuple([s for s in grain_ids.shape if s > 1])
+    return grain_ids.reshape(shape)
+
 def load_prng_state(path):
   state = list(np.random.get_state())
   with h5py.File(path) as f:
@@ -52,10 +79,10 @@ def save_args(args):
   """ save command line arguments """
   with h5py.File(args.infile) as f:
     try:
-      f.create_group(ARGSPATH)
+      f.create_group(ARGS_PATH)
     except ValueError:
-      del f[ARGSPATH]
-    h_args = f[ARGSPATH]
+      del f[ARGS_PATH]
+    h_args = f[ARGS_PATH]
     for key, value in args.__dict__.items():
       h_args[key] = value
 
@@ -65,7 +92,7 @@ def load_prev_args(args):
   """ load args from a previous run 
       modifies values in the arguments namespace """
   with h5py.File(args.infile) as f:
-    h_args = f[ARGSPATH]
+    h_args = f[ARGS_PATH]
     for key in args.__dict__.keys():
       args.__dict__[key] = h_args[key].value
   return args

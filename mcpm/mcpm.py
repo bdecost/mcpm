@@ -40,6 +40,8 @@ def main():
                       help='gaussian kernel normalization constant a')
   parser.add_argument('--freq', type=float, default=10,
                       help='timesteps between system snapshots')
+  parser.add_argument('--prefix', nargs='?', default='mcpm_dump',
+                      help='prefix for dump file')
   parser.add_argument('--neighborlist', action='store_true',
                       help='''Compute explicit neighbor lists.
                               Problematic with large 3D systems.''')
@@ -52,6 +54,8 @@ def main():
   parser.add_argument('--neighborfile', nargs='?', default='')
   parser.add_argument('--load_prng_state', action='store_true',
                       help='use the PRNG state stored in the input file')
+  parser.add_argument('--nostats', action='store_true',
+                      help='no statistics file.')
   parser.add_argument('--nodump', action='store_true',
                       help='no dream3d dump files.')
   
@@ -62,8 +66,8 @@ def main():
     io.load_prng_state(args.infile)
   else:
     io.save_prng_state(args.infile)
-  
-  stats.initialize(sites, args)
+  if not args.nostats:
+    stats.initialize(sites, args)
   
   if args.nbrhd == 'uniform':
     weights = uniform_mask(sites, radius=args.radius)
@@ -80,4 +84,5 @@ def main():
     kinetic.iterate(sites, weights, args)
 
   io.save_args(args)
-  stats.finalize()
+  if not args.nostats:
+    stats.finalize()
