@@ -32,8 +32,8 @@ def load_spparks(path):
         y = dimensions(next(f))
         z = dimensions(next(f))
         grain_ids = np.zeros((x,y,z))
-        # skip forward two lines
-        next(f); line = next(f)
+        # skip forward a line
+        line = next(f)
       else:
         # get id, spin, x, y, z
         idx, grain_id, x, y, z = map(int, line.split())
