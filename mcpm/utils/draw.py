@@ -148,10 +148,14 @@ def animate_snapshots():
     pass
   mark_grains = [] # list of grains to mark
   # mark_grains = [158, 2136, 2482, 300, 335, 39, 823]
+  
   print('processing snapshots')
-  if '*' in snapshots:
-    snapshots = glob.glob(snapshots)
+  if '*' in args.snapshots:
+    # zsh expands the wildcard and passes python a list of filenames
+    # bash doesn't expand the wildcard like this: check and glob
+    args.snapshots = glob.glob(snapshots)
   args.snapshots.sort()
+  
   vmin, vmax = 0, 0
   cmap = None
   for i,snapshot in enumerate(args.snapshots):

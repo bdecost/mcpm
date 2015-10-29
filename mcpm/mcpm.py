@@ -15,9 +15,9 @@ import numpy as np
 
 def main():
   parser = argparse.ArgumentParser(prog='mcpm',
-             description="Kinetic Monte Carlo grain growth"
-                         "simulations in 2 and 3 dimensions.",
-                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+             description='''Kinetic Monte Carlo grain growth
+                            simulations in 2 and 3 dimensions.''')
 
   parser.add_argument('-i', '--infile', nargs='?', default='input.dream3d',
                       help='DREAM3D file containing initial structure')
