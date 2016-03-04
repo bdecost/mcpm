@@ -11,6 +11,7 @@ high_angle = np.pi*30/180
 mobility_ratio = None
 energy_ratio = 0.5
 quaternions = None
+colors = None
 mobility_cache = {}
 
 
@@ -45,16 +46,39 @@ def threshold_mobility(a, b):
 def threshold_energy(qa, qb):
   angle = misori(qa, qb)
   return energy_ratio if angle < high_angle else 1
-  
+
+def discrete_texture_mobility(a, b):
+  global mobility_cache
+  key = tuple(sorted([a,b]))
+  try:
+    return mobility_cache[key]
+  except KeyError:
+    mobility = 1.0
+    if colors[a] == 0 or colors[b] == 0:
+      pass
+    elif colors[a] == colors[b]:
+        mobility = mobility_ratio
+    mobility_cache[key] = mobility
+    return mobility
+
+def discrete_texture_energy(a, b):
+    return 1
+
 def setup(options):
   global quaternions
+  global colors
   global mobility
   global mobility_ratio
   global high_angle
   mobility_ratio = options.mobility
-  if mobility_ratio != 1.0:
-    quaternions = io.load_quaternions(options.infile)
-    mobility = threshold_mobility
+  
+  if options.discrete == True:
+    colors = io.load_colors(options.infile)
+    mobility = discrete_texture_mobility
+  else:
+    if mobility_ratio != 1.0:
+      quaternions = io.load_quaternions(options.infile)
+      mobility = threshold_mobility
   high_angle = options.angle*np.pi/180
   
 mobility = uniform_mobility

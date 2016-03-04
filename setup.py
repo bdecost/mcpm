@@ -1,5 +1,6 @@
 from setuptools import setup
 from Cython.Build import cythonize
+import numpy
 
 setup(name='mcpm',
       version='0.1',
@@ -10,6 +11,7 @@ setup(name='mcpm',
       license='MIT',
       packages=['mcpm', 'mcpm.utils'],
       ext_modules=cythonize('mcpm/utils/unique.pyx'),
+      include_dirs=[numpy.get_include()],
       entry_points={
         'console_scripts': [
           'mcpm = mcpm.mcpm:main',

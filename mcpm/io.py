@@ -5,6 +5,7 @@ import h5py
 
 GRAIN_ID_PATH = 'DataContainers/SyntheticVolume/CellData/FeatureIds'
 QUATERNION_PATH = 'DataContainers/SyntheticVolume/CellFeatureData/AvgQuats'
+COLOR_PATH = 'DataContainers/SyntheticVolume/CellFeatureData/Color'
 PRNG_STATE_PATH = 'DataContainers/SytheticVolume/prng_state'
 ARGS_PATH = 'DataContainers/SytheticVolume/mcpm_args'
 
@@ -15,8 +16,8 @@ def load_dream3d(path):
   return grain_ids.reshape(shape)
 
 def dimensions(dim_line):
-    min_val, max_val = dim_line.split()
-    return int(float(max_val) - float(min_val))
+  min_val, max_val = dim_line.split()
+  return int(float(max_val) - float(min_val))
 
 def load_spparks(path):
   """ load microstructure from spparks text dump """
@@ -74,6 +75,13 @@ def load_quaternions(path):
   with h5py.File(path, 'r') as f:
     quaternions = np.array(f[QUATERNION_PATH], dtype=np.float32)
   return quaternions
+
+def load_colors(path):
+  """ load discrete texture-component states """
+  with h5py.File(path, 'r') as f:
+    colors = np.array(f[COLOR_PATH], dtype=np.int)
+  return colors
+    
 
 def save_args(args):
   """ save command line arguments """

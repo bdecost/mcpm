@@ -59,10 +59,12 @@ def main():
                       help='no statistics file.')
   parser.add_argument('--nodump', action='store_true',
                       help='no dream3d dump files.')
-  
+  parser.add_argument('--discrete', action='store_true',
+                      help='''use discrete orientation states for TRD simulations''')
+
   args = parser.parse_args()
   sites = io.load_dream3d(args.infile)
-
+  
   if args.load_prng_state:
     io.load_prng_state(args.infile)
   else:
