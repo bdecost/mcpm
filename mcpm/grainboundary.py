@@ -13,7 +13,7 @@ energy_ratio = 0.5
 quaternions = None
 colors = None
 mobility_cache = {}
-
+energy_cache = {}
 
 def energy(*args):
   return uniform_energy()
@@ -62,7 +62,18 @@ def discrete_texture_mobility(a, b):
     return mobility
 
 def discrete_texture_energy(a, b):
-    return 1
+    global energy_cache
+  key = tuple(sorted([a,b]))
+  try:
+    return energy_cache[key]
+  except KeyError:
+    energy = 1.0
+    if colors[a] == 0 or colors[b] == 0:
+      pass
+    elif colors[a] == colors[b]:
+        energy = energy_ratio
+    mobility_cache[key] = energy
+    return energy
 
 def setup(options):
   global quaternions
@@ -74,7 +85,8 @@ def setup(options):
   
   if options.discrete == True:
     colors = io.load_colors(options.infile)
-    mobility = discrete_texture_mobility
+    # mobility = discrete_texture_mobility
+    energy = discrete_texture_energy
   else:
     if mobility_ratio != 1.0:
       quaternions = io.load_quaternions(options.infile)
