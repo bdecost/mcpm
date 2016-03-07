@@ -9,7 +9,7 @@ from . import io
 # find the best way to set these at runtime
 high_angle = np.pi*30/180
 mobility_ratio = None
-energy_ratio = 0.5
+energy_ratio = 0.6
 quaternions = None
 colors = None
 mobility_cache = {}
