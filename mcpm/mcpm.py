@@ -48,6 +48,8 @@ def main():
                               Problematic with large 3D systems.''')
   parser.add_argument('--mobility', type=float, default=1.0,
                       help='''use misorientation-threshold mobility. This is the mobility ratio.''')
+  parser.add_argument('--energy', type=float, default=1.0,
+                      help='''use misorientation-threshold energy. This is the energy ratio.''')
   parser.add_argument('--angle', type=float, default=30.0,
                       help='high angle boundary cutoff in degrees')
   parser.add_argument('--statsfile', nargs='?', default='stats.h5',
