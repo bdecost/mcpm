@@ -85,15 +85,17 @@ def load_colors(path):
 
 def save_args(args):
   """ save command line arguments """
-  with h5py.File(args.infile) as f:
-    try:
-      f.create_group(ARGS_PATH)
-    except ValueError:
-      del f[ARGS_PATH]
-    h_args = f[ARGS_PATH]
-    for key, value in args.__dict__.items():
-      h_args[key] = value
-
+  try:
+    with h5py.File(args.infile) as f:
+      try:
+        f.create_group(ARGS_PATH)
+      except ValueError:
+        del f[ARGS_PATH]
+      h_args = f[ARGS_PATH]
+      for key, value in args.__dict__.items():
+        h_args[key] = value
+  except:
+    print('could not save arguments...')
   return
 
 def load_prev_args(args):
