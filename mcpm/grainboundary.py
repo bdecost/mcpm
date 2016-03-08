@@ -72,7 +72,7 @@ def discrete_texture_energy(a, b):
       pass
     elif colors[a] == colors[b]:
       energy = energy_ratio
-    mobility_cache[key] = energy
+    energy_cache[key] = energy
   return energy
 
 def setup(options):
