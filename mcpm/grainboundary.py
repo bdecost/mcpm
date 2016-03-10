@@ -80,6 +80,7 @@ def setup(options):
   global colors
   global mobility
   global mobility_ratio
+  global energy
   global energy_ratio
   global high_angle
   mobility_ratio = options.mobility
