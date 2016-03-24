@@ -95,7 +95,7 @@ def setup(options):
     # mobility = discrete_texture_mobility
     global energy
     global energy_cache
-    energy_cache = setup_discrete_texture_energy(colors)
+    energy_cache = setup_discrete_texture_energy(colors, options.energy)
     energy = discrete_texture_energy
   else:
     if mobility_ratio != 1.0:
