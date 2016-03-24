@@ -24,13 +24,13 @@ def site_propensity(site, nearest, kT, sites, weights):
   if states.size == 0:
     return 0
 
-  delta = sites[neighs] != current_state
+  delta = gb.energy(sites[neighs], current_state)
   current_energy = np.sum(np.multiply(delta, weights))
 
   prob = 0
   for proposed_state in states:
     sites[site] = proposed_state
-    delta = sites[neighs] != proposed_state
+    delta = gb.energy(sites[neighs], current_state)
     proposed_energy = np.sum(np.multiply(delta, weights))
     energy_change = proposed_energy - current_energy
 
@@ -55,13 +55,14 @@ def site_event(site, nearest, kT, weights, sites, propensity):
   states = np.unique(nearest_states)
   states = states[states != current_state]
 
-  delta = sites[neighs] != current_state
+  delta = gb.energy(sites[neighs], current_state)
   current_energy = np.sum(np.multiply(delta, weights))
 
   prob = 0
   for proposed_state in states:
     sites[site] = proposed_state
-    delta = sites[neighs] != proposed_state
+    
+    delta = gb.energy(sites[neighs], current_state)
     proposed_energy = np.sum(np.multiply(delta, weights))
     energy_change = proposed_energy - current_energy
 
