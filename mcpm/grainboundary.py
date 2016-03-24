@@ -61,19 +61,23 @@ def discrete_texture_mobility(a, b):
     mobility_cache[key] = mobility
     return mobility
 
-def discrete_texture_energy(a, b):
+def setup_discrete_texture_energy(colors, energy_ratio):
+    """ make a lookup table for energy values """
+    energy_table = np.ones((len(colors), len(colors)), dtype=float)
+
+    for color in np.unique(colors):
+        if color > 0:
+            idx = np.where(colors == color)
+            y,x = np.meshgrid(idx,idx)
+            energy_table[x,y] = energy_ratio
+
+    np.fill_diagonal(energy_table, 0)
+    
+    return energy_table
+
+def discrete_texture_energy(neighstates, refstate):
   global energy_cache
-  key = tuple(sorted([a,b]))
-  try:
-    return energy_cache[key]
-  except KeyError:
-    energy = 1.0
-    if colors[a] == 0 or colors[b] == 0:
-      pass
-    elif colors[a] == colors[b]:
-      energy = energy_ratio
-    mobility_cache[key] = energy
-  return energy
+  return energy_cache[neighstates, refstate]
 
 def setup(options):
   global quaternions
@@ -88,6 +92,9 @@ def setup(options):
   if options.discrete == True:
     colors = io.load_colors(options.infile)
     # mobility = discrete_texture_mobility
+    global energy
+    global energy_cache
+    energy_cache = setup_discrete_texture_energy(colors)
     energy = discrete_texture_energy
   else:
     if mobility_ratio != 1.0:
